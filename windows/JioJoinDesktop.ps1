@@ -6,6 +6,7 @@ $created = $false
 $mutex = [Threading.Mutex]::new($true, 'Local\JioJoinDesktop-Protocol1', [ref]$created)
 if (-not $created) { [Windows.MessageBox]::Show('JioJoin Desktop is already running.'); exit 2 }
 $script:engine = $null; $script:cookie = $null; $script:credentials = $null
+$script:lastPong = [DateTime]::UtcNow; $script:inCall = $false
 $identityDir = Join-Path $env:LOCALAPPDATA 'JioJoin Desktop'
 $identityPath = Join-Path $identityDir 'device-id.txt'
 if (Test-Path $identityPath) { $script:device = (Get-Content -LiteralPath $identityPath -Raw).Trim() }
@@ -66,6 +67,7 @@ function Parse-Credentials([string]$text) {
 function B64([string]$v) { [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($v)) }
 function Send-Engine([string]$line) { if (-not $script:engine -or $script:engine.HasExited) { throw 'Calling engine is unavailable.' }; $script:engine.StandardInput.WriteLine($line); $script:engine.StandardInput.Flush() }
 function Start-Engine($credentials) {
+  if ($script:inCall) { throw 'End the active call before reconnecting.' }
   Stop-Engine
   $path=Join-Path $PSScriptRoot 'jiojoin-engine.exe'; if (-not (Test-Path $path)) { throw 'jiojoin-engine.exe is missing.' }
   $psi=[Diagnostics.ProcessStartInfo]::new($path,'--stdio'); $psi.UseShellExecute=$false; $psi.CreateNoWindow=$true; $psi.RedirectStandardInput=$true; $psi.RedirectStandardOutput=$true; $psi.RedirectStandardError=$false
@@ -74,20 +76,24 @@ function Start-Engine($credentials) {
   $script:engine=[Diagnostics.Process]::new(); $script:engine.StartInfo=$psi; [void]$script:engine.Start()
   $hello=$script:engine.StandardOutput.ReadLine() | ConvertFrom-Json
   if ($hello.event -ne 'hello' -or $hello.protocol -ne 1 -or $hello.platform -ne 'windows' -or $hello.architecture -ne 'x86_64') { Stop-Engine; throw 'Engine protocol/platform handshake failed.' }
+  $script:lastPong = [DateTime]::UtcNow
   $script:engine.add_OutputDataReceived({ param($s,$e) if ($e.Data) { $window.Dispatcher.Invoke([action]{ Handle-Event ($e.Data | ConvertFrom-Json) }) } }); $script:engine.BeginOutputReadLine()
   Send-Engine ('START`t'+(($credentials | ForEach-Object { B64 $_ }) -join "`t")); Set-State 'Connecting' 'Waiting for JioFiber registration'
 }
-function Stop-Engine { if ($script:engine -and -not $script:engine.HasExited) { try { Send-Engine 'QUIT'; $script:engine.WaitForExit(3000) | Out-Null } catch {}; if (-not $script:engine.HasExited) {$script:engine.Kill()} }; $script:engine=$null; $script:credentials=$null }
+function Stop-Engine { if ($script:engine -and -not $script:engine.HasExited) { try { Send-Engine 'QUIT'; $script:engine.WaitForExit(3000) | Out-Null } catch {}; if (-not $script:engine.HasExited) {$script:engine.Kill()} }; $script:engine=$null; $script:credentials=$null; $script:inCall=$false }
 function Set-State($state,$detail) { $Status.Text=$state; $Detail.Text=$detail }
 function Log($line) { $Diagnostics.AppendText($line+"`r`n"); $Diagnostics.ScrollToEnd() }
 function Handle-Event($event) {
   switch ($event.event) {
+    'pong' { $script:lastPong = [DateTime]::UtcNow }
     'registered' { Set-State 'Ready for calls' 'Registered on JioFiber (SIP 200)' }
     'registration' { if ($event.code -ge 300) {Set-State 'Connection failed' "SIP $($event.code): $($event.message)"} else {Set-State 'Connecting' $event.message} }
-    'incoming' { Set-State 'Incoming call' 'Answer or reject' }
+    'incoming' { $script:inCall=$true; Set-State 'Incoming call' 'Answer or reject' }
+    'dialing' { $script:inCall=$true; Set-State 'Calling' $event.message }
+    'call-state' { $script:inCall=($event.message -ne 'DISCONNECTED'); Set-State $(if($script:inCall){'Call active'}else{'Ready for calls'}) $event.message }
     'held' { $script:held=$true; Set-State 'Call on hold' $event.message }
     'resumed' { $script:held=$false; Set-State 'Call active' $event.message }
-    'media' { Set-State 'Call active' $event.message }
+    'media' { $script:inCall=$true; Set-State 'Call active' $event.message }
     'error' { Set-State 'Engine error' "$($event.message) ($($event.code))" }
   }
   if ($event.event -notin 'pong','status','hello') { Log "$($event.event): $($event.message) [$($event.code)]" }
@@ -104,6 +110,16 @@ function Handle-Event($event) {
 '@
 $reader=[Xml.XmlNodeReader]::new($xaml); $window=[Windows.Markup.XamlReader]::Load($reader)
 foreach($name in 'Status','Detail','OTP','Number','Keypad','Diagnostics','Capture','Playback','Connect','Request','Verify','Disconnect','Call','Answer','Reject','Hangup','Hold'){Set-Variable -Name $name -Value $window.FindName($name) -Scope Script}
+$heartbeat = [Windows.Threading.DispatcherTimer]::new()
+$heartbeat.Interval = [TimeSpan]::FromSeconds(10)
+$heartbeat.Add_Tick({
+  if ($script:engine -and -not $script:engine.HasExited) {
+    if (([DateTime]::UtcNow - $script:lastPong).TotalSeconds -gt 35) {
+      Stop-Engine; Set-State 'Engine failure' 'The calling engine stopped responding. Use Connect to retry.'
+    } else { try { Send-Engine 'PING' } catch { Stop-Engine; Set-State 'Engine failure' 'The calling engine exited. Use Connect to retry.' } }
+  }
+})
+$heartbeat.Start()
 try {
   $options = & (Join-Path $PSScriptRoot 'jiojoin-engine.exe') --list-audio 2>$null | ForEach-Object { $_ | ConvertFrom-Json } | Where-Object event -eq 'audio-device-option'
   foreach($option in $options) { if($option.capture){[void]$Capture.Items.Add($option.message)};if($option.playback){[void]$Playback.Items.Add($option.message)} }
@@ -115,4 +131,4 @@ $Verify.Add_Click({$code=$OTP.Password;$OTP.Clear();try{if($code -notmatch '^\d{
 $Disconnect.Add_Click({Stop-Engine;Set-State 'Offline' 'Disconnected by user'})
 $Call.Add_Click({try{$n=$Number.Text -replace '[^0-9+]','';if($n -match '^[6-9]\d{9}$'){$n='0'+$n};if(-not $n){throw 'Enter a valid number.'};Send-Engine ('DIAL`t'+(B64 $n))}catch{Set-State 'Call failed' $_.Exception.Message}})
 $Answer.Add_Click({try{Send-Engine 'ANSWER'}catch{Set-State 'Call failed' $_.Exception.Message}});$Reject.Add_Click({try{Send-Engine 'REJECT'}catch{Set-State 'Call failed' $_.Exception.Message}});$Hangup.Add_Click({try{Send-Engine 'HANGUP'}catch{Set-State 'Call failed' $_.Exception.Message}});$Hold.Add_Click({try{Send-Engine $(if($script:held){'RESUME'}else{'HOLD'})}catch{Set-State 'Call failed' $_.Exception.Message}})
-$window.Add_Closed({Stop-Engine;$mutex.ReleaseMutex();$mutex.Dispose()});[void]$window.ShowDialog()
+$window.Add_Closed({$heartbeat.Stop();Stop-Engine;$mutex.ReleaseMutex();$mutex.Dispose()});[void]$window.ShowDialog()
