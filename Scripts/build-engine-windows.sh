@@ -9,7 +9,7 @@ task_patch="$task_root/patches/pjproject-2.17-jio.patch"
 
 [[ "${MSYSTEM:-}" == MINGW64 ]] || { echo "Run from an MSYS2 MINGW64 shell." >&2; exit 2; }
 [[ "$(uname -m)" == x86_64 ]] || { echo "Windows x86_64 is required." >&2; exit 2; }
-for command in git make gcc g++ pkg-config; do command -v "$command" >/dev/null || { echo "Missing: $command" >&2; exit 3; }; done
+for command in git make gcc g++ perl pkg-config; do command -v "$command" >/dev/null || { echo "Missing: $command" >&2; exit 3; }; done
 
 if [[ ! -d "$task_pj/.git" ]]; then
   git -c core.autocrlf=false clone --branch 2.17 --depth 1 https://github.com/pjsip/pjproject.git "$task_pj"
@@ -21,11 +21,12 @@ fi
 git -C "$task_pj" apply --reverse --check --ignore-space-change --ignore-whitespace "$task_patch" || { echo "Reviewed Jio patch is missing or changed." >&2; exit 5; }
 
 cp "$task_root/engine/jiojoin_engine.c" "$task_pj/pjsip-apps/src/samples/jiojoin_engine.c"
-# PJSIP's MSYS-hosted sample rule includes the target suffix in its object
-# basename. Provide that build-only alias for the MinGW .exe target.
-cp "$task_root/engine/jiojoin_engine.c" "$task_pj/pjsip-apps/src/samples/jiojoin_engine.exe.c"
 cp "$task_root/engine/jiojoin_platform.h" "$task_pj/pjsip-apps/src/samples/jiojoin_platform.h"
 cp "$task_root/engine/jiojoin_protocol.h" "$task_pj/pjsip-apps/src/samples/jiojoin_protocol.h"
+# When MSYS is the build host, PJSIP includes the MinGW .exe suffix in the
+# sample object's source basename. Strip it only for that generated object.
+perl -pi -e 's/SAMPLE_OBJS=\$\@\.o/SAMPLE_OBJS=\$\(basename \$\@\).o/' "$task_pj/pjsip-apps/build/Samples.mak"
+grep -F 'SAMPLE_OBJS=$(basename $@).o' "$task_pj/pjsip-apps/build/Samples.mak" >/dev/null
 cd "$task_pj"
 [[ ! -f build.mak ]] || make distclean
 ./configure --host=x86_64-w64-mingw32 --disable-video --disable-gsm-codec \
