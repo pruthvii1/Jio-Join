@@ -24,6 +24,7 @@ import socket
 import struct
 import subprocess
 import sys
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -562,6 +563,8 @@ def interactive(client: EngineClient) -> None:
 
 
 def default_engine() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().with_name("jiojoin-engine")
     root = Path(__file__).resolve().parent.parent
     architecture = os.uname().machine
     built = root / "build" / "headless" / f"linux-{architecture}" / "jiojoin-engine"

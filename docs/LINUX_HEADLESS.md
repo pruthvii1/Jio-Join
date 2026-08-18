@@ -24,7 +24,7 @@ host, for example `linux-x86_64` or `linux-aarch64`):
 ./Scripts/test-engine-protocol.sh ./build/headless/linux-$(uname -m)/jiojoin-engine
 ```
 
-Create the GitHub-release archive:
+Create the headless archive:
 
 ```sh
 ./Scripts/package-engine-linux.sh
@@ -39,6 +39,22 @@ does not save SIP credentials, cookies, or OTPs to disk.
 Extract the archive, then install it with `sudo ./install.sh`. The launcher appears as
 **JioJoin Desktop**. `sudo ./uninstall.sh` removes application files but deliberately
 preserves the non-secret per-user device alias.
+
+For the normal desktop installation, the release workflow instead builds a native Debian
+package with the Python and Tk runtime embedded:
+
+```sh
+sudo apt-get install -y pyinstaller python3-tk
+./Scripts/build-linux-desktop.sh
+./Scripts/package-linux-desktop.sh
+```
+
+The resulting `dist/JioJoin-Desktop-0.8.0-linux-amd64.deb` can be opened with Linux
+Mint's package installer. Python, Tk, and PyInstaller are build-time dependencies only;
+the installed application does not require `python3-tk` or a terminal. The package
+manager installs the native engine's standard audio, TLS, AMR, and `curl` runtime
+libraries. Linux still requires one explicit install and one user launch; downloaded
+applications are not auto-executed.
 
 Do not paste a `START` command into an interactive terminal because base64-encoded SIP
 passwords remain reusable secrets.

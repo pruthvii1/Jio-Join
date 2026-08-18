@@ -39,13 +39,23 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y \
             build-essential git pkg-config python3 curl libssl-dev libasound2-dev \
-            libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev
+            libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev \
+            pyinstaller python3-tk
       - name: Build and test protocol
         run: ./Scripts/build-engine-linux.sh
       - name: Package headless engine
         run: ./Scripts/package-engine-linux.sh
+      - name: Build self-contained desktop and Debian package
+        run: |
+          ./Scripts/build-linux-desktop.sh
+          ./Scripts/package-linux-desktop.sh
       - uses: actions/upload-artifact@v4
         with:
           name: jiojoin-engine-0.8.0-linux-x86_64
           path: dist/jiojoin-engine-0.8.0-linux-x86_64.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JioJoin-Desktop-0.8.0-linux-amd64
+          path: dist/JioJoin-Desktop-0.8.0-linux-amd64.deb
           if-no-files-found: error
