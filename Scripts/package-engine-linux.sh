@@ -12,7 +12,7 @@ task_archive="$task_root/dist/jiojoin-engine-0.8.0-linux-$task_arch.tar.gz"
 [[ "$task_stage" == "$task_root/build/headless/package-linux-$task_arch" ]] || exit 4
 
 /bin/rm -rf -- "$task_stage"
-mkdir -p "$task_stage"
+mkdir -p "$task_stage" "$(dirname "$task_archive")"
 cp "$task_engine" "$task_stage/jiojoin-engine"
 cp "$task_root/linux/jiojoin_controller.py" "$task_stage/jiojoin-controller"
 cp "$task_root/linux/jiojoin_desktop.py" "$task_stage/jiojoin-desktop"
