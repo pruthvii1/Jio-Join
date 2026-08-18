@@ -6,6 +6,7 @@ task_pj="$task_root/vendor/pjproject-windows"
 task_output="$task_root/build/headless/windows-x86_64"
 task_expected=5a457451fa2712ba18e12b01738e8ff3af2b26fd
 task_patch="$task_root/patches/pjproject-2.17-jio.patch"
+task_mingw_patch="$task_root/patches/pjproject-mingw-sample-suffix.patch"
 
 [[ "${MSYSTEM:-}" == MINGW64 ]] || { echo "Run from an MSYS2 MINGW64 shell." >&2; exit 2; }
 [[ "$(uname -m)" == x86_64 ]] || { echo "Windows x86_64 is required." >&2; exit 2; }
@@ -19,6 +20,10 @@ if [[ ! -d "$task_pj/.git" ]]; then
 fi
 [[ $(git -C "$task_pj" rev-parse HEAD) == "$task_expected" ]] || { echo "Unexpected PJSIP revision." >&2; exit 4; }
 git -C "$task_pj" apply --reverse --check --ignore-space-change --ignore-whitespace "$task_patch" || { echo "Reviewed Jio patch is missing or changed." >&2; exit 5; }
+if git -C "$task_pj" apply --check "$task_mingw_patch"; then
+  git -C "$task_pj" apply "$task_mingw_patch"
+fi
+git -C "$task_pj" apply --reverse --check "$task_mingw_patch" || { echo "MinGW executable-suffix patch is missing or changed." >&2; exit 5; }
 
 cp "$task_root/engine/jiojoin_engine.c" "$task_pj/pjsip-apps/src/samples/jiojoin_engine.c"
 cp "$task_root/engine/jiojoin_platform.h" "$task_pj/pjsip-apps/src/samples/jiojoin_platform.h"
