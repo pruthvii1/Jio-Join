@@ -38,15 +38,18 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential git pkg-config python3 curl libssl-dev libasound2-dev \
+            build-essential git pkg-config python3 python3-pip python3-venv curl libssl-dev libasound2-dev \
             libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev \
-            pyinstaller python3-tk
+            python3-tk
       - name: Build and test protocol
         run: ./Scripts/build-engine-linux.sh
       - name: Package headless engine
         run: ./Scripts/package-engine-linux.sh
       - name: Build self-contained desktop and Debian package
         run: |
+          python3 -m venv build/pyinstaller-venv
+          build/pyinstaller-venv/bin/pip install --disable-pip-version-check pyinstaller==6.15.0
+          export PATH="$PWD/build/pyinstaller-venv/bin:$PATH"
           ./Scripts/build-linux-desktop.sh
           ./Scripts/package-linux-desktop.sh
       - uses: actions/upload-artifact@v4

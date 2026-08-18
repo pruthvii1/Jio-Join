@@ -44,7 +44,10 @@ For the normal desktop installation, the release workflow instead builds a nativ
 package with the Python and Tk runtime embedded:
 
 ```sh
-sudo apt-get install -y pyinstaller python3-tk
+sudo apt-get install -y python3-pip python3-venv python3-tk
+python3 -m venv build/pyinstaller-venv
+build/pyinstaller-venv/bin/pip install pyinstaller==6.15.0
+export PATH="$PWD/build/pyinstaller-venv/bin:$PATH"
 ./Scripts/build-linux-desktop.sh
 ./Scripts/package-linux-desktop.sh
 ```

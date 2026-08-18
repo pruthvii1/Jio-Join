@@ -11,6 +11,24 @@ Copy-Item (Join-Path $Root 'windows\JioJoinDesktop.ps1') $Stage
 Copy-Item (Join-Path $Root 'windows\Install.ps1') $Stage
 Copy-Item (Join-Path $Root 'windows\Uninstall.ps1') $Stage
 Copy-Item (Join-Path $Root 'LICENSE.md') $Stage
+$OriginalPath = $env:PATH
+try {
+    $env:PATH = "$Stage;$env:SystemRoot\System32;$env:SystemRoot"
+    $SelfTestLine = & (Join-Path $Stage 'jiojoin-engine.exe') --self-test 2>$null |
+        Where-Object { $_ -like '{"event":"self-test"*' } |
+        Select-Object -Last 1
+    if ($LASTEXITCODE -ne 0 -or -not $SelfTestLine) { throw 'Packaged Windows engine self-test failed.' }
+    $SelfTest = $SelfTestLine | ConvertFrom-Json
+    if (-not $SelfTest.tls -or -not $SelfTest.amr -or -not $SelfTest.amr_wb) {
+        throw 'Packaged Windows engine is missing TLS or AMR support.'
+    }
+    if ($SelfTest.platform -ne 'windows' -or $SelfTest.architecture -ne 'x86_64') {
+        throw 'Packaged engine has the wrong platform or architecture.'
+    }
+}
+finally {
+    $env:PATH = $OriginalPath
+}
 Compress-Archive -Path (Join-Path $Stage '*') -DestinationPath $Archive -Force
 $Hash = (Get-FileHash -Algorithm SHA256 $Archive).Hash.ToLowerInvariant()
 Write-Output "$Archive`nsha256=$Hash"
