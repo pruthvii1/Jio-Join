@@ -15,10 +15,10 @@ if [[ ! -d "$task_pj/.git" ]]; then
   git -c core.autocrlf=false clone --branch 2.17 --depth 1 https://github.com/pjsip/pjproject.git "$task_pj"
   git -C "$task_pj" config core.autocrlf false
   git -C "$task_pj" checkout --detach "$task_expected"
-  git -C "$task_pj" apply "$task_patch"
+  git -C "$task_pj" apply --ignore-space-change --ignore-whitespace "$task_patch"
 fi
 [[ $(git -C "$task_pj" rev-parse HEAD) == "$task_expected" ]] || { echo "Unexpected PJSIP revision." >&2; exit 4; }
-git -C "$task_pj" apply --reverse --check "$task_patch" || { echo "Reviewed Jio patch is missing or changed." >&2; exit 5; }
+git -C "$task_pj" apply --reverse --check --ignore-space-change --ignore-whitespace "$task_patch" || { echo "Reviewed Jio patch is missing or changed." >&2; exit 5; }
 
 cp "$task_root/engine/jiojoin_engine.c" "$task_pj/pjsip-apps/src/samples/jiojoin_engine.c"
 cp "$task_root/engine/jiojoin_platform.h" "$task_pj/pjsip-apps/src/samples/jiojoin_platform.h"
