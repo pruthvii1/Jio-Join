@@ -315,10 +315,6 @@ private struct AppSidebar: View {
             .listStyle(.sidebar)
 
             VStack(alignment: .leading, spacing: 10) {
-                HStack(spacing: 8) {
-                    Circle().fill(engine.registered ? Color.green : Color.secondary.opacity(0.5)).frame(width: 8, height: 8)
-                    Text(engine.state).font(.caption).lineLimit(2)
-                }
                 HStack(spacing: 6) {
                     Image(systemName: authorized ? "lock.shield.fill" : "lock.trianglebadge.exclamationmark")
                     Text(authorized ? "Authorized on this Mac" : "Setup required")
@@ -341,7 +337,7 @@ private struct ConnectionPill: View {
     var body: some View {
         HStack(spacing: 7) {
             Circle().fill(engine.registered ? Color.green : Color.orange).frame(width: 7, height: 7)
-            Text(engine.registered ? "Connected" : "Offline").font(.caption.weight(.medium))
+            Text(engine.state).font(.caption.weight(.medium)).lineLimit(1)
         }
         .padding(.horizontal, 11).padding(.vertical, 6)
         .background(.thinMaterial, in: Capsule())
@@ -374,9 +370,8 @@ private struct MenuBarStatusView: View {
             Button("End Call", systemImage: "phone.down.fill", role: .destructive) { engine.hangup() }
             Divider()
         } else {
-            Label(engine.registered ? "Ready for calls" : "Not connected",
+            Label(engine.state,
                   systemImage: engine.registered ? "checkmark.circle.fill" : "exclamationmark.circle")
-            Text(engine.state)
             Divider()
         }
 
@@ -423,7 +418,6 @@ private struct CallsView: View {
                 .frame(maxWidth: 510)
 
                 VStack(spacing: 18) {
-                    ReadinessCard(engine: engine)
                     RecentCallsCard(engine: engine, number: $number, onShowHistory: onShowHistory)
                 }
                 .frame(maxWidth: 380)
@@ -523,26 +517,6 @@ private struct ActiveCallCard: View {
         }
         .frame(maxWidth: .infinity)
         .modernCard(accent: .green)
-    }
-}
-
-private struct ReadinessCard: View {
-    @ObservedObject var engine: EngineManager
-
-    var body: some View {
-        HStack(spacing: 14) {
-            ZStack {
-                Circle().fill((engine.registered ? Color.green : Color.orange).opacity(0.14)).frame(width: 48, height: 48)
-                Image(systemName: engine.registered ? "checkmark.circle.fill" : "wifi.exclamationmark")
-                    .font(.title2).foregroundStyle(engine.registered ? .green : .orange)
-            }
-            VStack(alignment: .leading, spacing: 3) {
-                Text(engine.registered ? "Ready to call" : "Not connected").font(.headline)
-                Text(engine.state).font(.caption).foregroundStyle(.secondary).lineLimit(2)
-            }
-            Spacer()
-        }
-        .modernCard()
     }
 }
 
@@ -727,10 +701,7 @@ private struct SettingsView: View {
                     if credentials != nil {
                         Divider()
                         HStack {
-                            VStack(alignment: .leading, spacing: 3) {
-                                Text(engine.registered ? "This Mac is connected" : "This Mac is not connected").font(.callout.weight(.medium))
-                                Text(engine.state).font(.caption).foregroundStyle(.secondary)
-                            }
+                            Text("Connection controls").font(.callout.weight(.medium))
                             Spacer()
                             if engine.registered {
                                 Button("Disconnect") { engine.stop() }

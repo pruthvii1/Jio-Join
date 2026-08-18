@@ -1,0 +1,27 @@
+name: Windows engine
+on:
+  push:
+    branches: [main, 'codex/**']
+  pull_request:
+jobs:
+  build:
+    runs-on: windows-2025
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            git make patch pkgconf
+            mingw-w64-x86_64-toolchain
+            mingw-w64-x86_64-openssl
+            mingw-w64-x86_64-opencore-amr
+      - shell: msys2 {0}
+        run: ./Scripts/build-engine-windows.sh
+      - shell: powershell
+        run: ./Scripts/package-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JioJoin-Desktop-windows-x86_64
+          path: dist/JioJoin-Desktop-0.8.0-windows-x86_64.zip

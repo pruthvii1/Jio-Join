@@ -30,10 +30,15 @@ Create the GitHub-release archive:
 ./Scripts/package-engine-linux.sh
 ```
 
-The archive contains `jiojoin-engine` and `jiojoin-controller`. The controller uses only
-Python 3's standard library and the system `curl` executable. It owns local router OTP
+The archive contains `jiojoin-engine`, the CLI controller, the Tk desktop interface, and
+install/uninstall scripts. The controllers use only Python 3's standard library, Tk, and
+the system `curl` executable. They own local router OTP
 authorization and feeds credentials to the engine through an anonymous stdin pipe. It
 does not save SIP credentials, cookies, or OTPs to disk.
+
+Extract the archive, then install it with `sudo ./install.sh`. The launcher appears as
+**JioJoin Desktop**. `sudo ./uninstall.sh` removes application files but deliberately
+preserves the non-secret per-user device alias.
 
 Do not paste a `START` command into an interactive terminal because base64-encoded SIP
 passwords remain reusable secrets.
@@ -79,6 +84,8 @@ JIOJOIN_PLAYBACK_DEVICE
 
 Both exact device names are required when either override is set. `--audio-device-test`
 opens those devices without registering to Jio.
+The desktop UI obtains exact native PJSIP names from `--list-audio` and applies the pair
+on the next connection.
 
 ## Current boundary
 
