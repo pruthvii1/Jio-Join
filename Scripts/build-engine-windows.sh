@@ -16,6 +16,7 @@ for command in curl git make gcc g++ perl pkg-config sha256sum tar; do command -
 
 if [[ ! -f "$task_vo/configure" ]]; then
   task_vo_archive="$task_root/vendor/vo-amrwbenc-0.1.3.tar.gz"
+  mkdir -p "$task_root/vendor"
   curl -L --fail --retry 3 "$task_vo_url" -o "$task_vo_archive"
   echo "$task_vo_sha  $task_vo_archive" | sha256sum --check
   mkdir -p "$task_vo"
