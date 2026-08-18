@@ -1,0 +1,45 @@
+name: Headless engine
+
+on:
+  push:
+    paths:
+      - "engine/**"
+      - "patches/**"
+      - "Scripts/build-engine-linux.sh"
+      - "Scripts/package-engine-linux.sh"
+      - "Scripts/test-engine-protocol.sh"
+      - ".github/workflows/headless-engine.yml"
+  pull_request:
+    paths:
+      - "engine/**"
+      - "patches/**"
+      - "Scripts/build-engine-linux.sh"
+      - "Scripts/package-engine-linux.sh"
+      - "Scripts/test-engine-protocol.sh"
+      - ".github/workflows/headless-engine.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ubuntu-x86_64:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install reviewed build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential git pkg-config libssl-dev libasound2-dev \
+            libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev
+      - name: Build and test protocol
+        run: ./Scripts/build-engine-linux.sh
+      - name: Package headless engine
+        run: ./Scripts/package-engine-linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: jiojoin-engine-0.8.0-linux-x86_64
+          path: dist/jiojoin-engine-0.8.0-linux-x86_64.tar.gz
+          if-no-files-found: error

@@ -1,0 +1,22 @@
+.DS_Store
+.build/
+build/
+dist/
+vendor/
+.venv*/
+__pycache__/
+*.pyc
+*.log
+*.pcap
+*.pcapng
+*.wav
+
+# Local credentials, provisioning material, and developer overrides must never
+# enter source control.
+.env
+.env.*
+*.key
+*.pem
+*.p12
+credentials.json
+provisioning.xml

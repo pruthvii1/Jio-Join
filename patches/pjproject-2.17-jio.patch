@@ -1,0 +1,71 @@
+diff --git a/pjmedia/src/pjmedia-codec/opencore_amr.c b/pjmedia/src/pjmedia-codec/opencore_amr.c
+--- a/pjmedia/src/pjmedia-codec/opencore_amr.c
++++ b/pjmedia/src/pjmedia-codec/opencore_amr.c
+@@ -438,9 +438,13 @@ static pj_status_t amr_default_attr( pjmedia_codec_factory *factory,
+     attr->setting.plc = 1;
+ 
+     if (def_config[idx].octet_align) {
+-        attr->setting.dec_fmtp.cnt = 1;
++        attr->setting.dec_fmtp.cnt = 2;
+         attr->setting.dec_fmtp.param[0].name = pj_str("octet-align");
+         attr->setting.dec_fmtp.param[0].val = pj_str("1");
++        attr->setting.dec_fmtp.param[1].name = pj_str("mode-set");
++        attr->setting.dec_fmtp.param[1].val = (idx == IDX_AMR_NB) ?
++            pj_str("0,1,2,3,4,5,6,7") :
++            pj_str("0,1,2,3,4,5,6,7,8");
+     }
+ 
+     /* Default all other flag bits disabled. */
+diff --git a/pjsip-apps/build/Samples.mak b/pjsip-apps/build/Samples.mak
+--- a/pjsip-apps/build/Samples.mak
++++ b/pjsip-apps/build/Samples.mak
+@@ -26,6 +26,7 @@ SAMPLES := aidemo \
+ 	   httpdemo \
+ 	   icedemo \
+ 	   jbsim \
++	   jiojoin_engine \
+ 	   latency \
+ 	   level \
+ 	   mix \
+diff --git a/pjsip/src/pjsua-lib/pjsua_acc.c b/pjsip/src/pjsua-lib/pjsua_acc.c
+--- a/pjsip/src/pjsua-lib/pjsua_acc.c
++++ b/pjsip/src/pjsua-lib/pjsua_acc.c
+@@ -1821,8 +1821,7 @@ done:
+               acc->cfg.contact_params.slen +
+               acc->cfg.reg_contact_params.slen +
+               acc->cfg.reg_contact_uri_params.slen +
+-              (need_outbound?
+-               (acc->rfc5626_instprm.slen + acc->rfc5626_regprm.slen): 0) +
++              (need_outbound? acc->rfc5626_regprm.slen: 0) +
+               5; /* allowance */
+         if (len > acc->contact.slen) {
+             reg_contact.ptr = (char*) pj_pool_alloc(acc->pool, len);
+@@ -1874,7 +1873,6 @@ done:
+                  * +sip.instance and reg-id parameters.
+                  */
+                 pj_strcat(&reg_contact, &acc->rfc5626_regprm);
+-                pj_strcat(&reg_contact, &acc->rfc5626_instprm);
+             } else {
+                 acc->rfc5626_status = OUTBOUND_NA;
+             }
+@@ -4108,6 +4106,20 @@ PJ_DEF(pj_status_t) pjsua_acc_create_uac_contact( pj_pool_t *pool,
+         transport_param[0] = '\0';
+     }
+ 
++    if (acc->cfg.use_rfc5626 &&
++        pj_strstr(&acc->cfg.contact_params, &acc->rfc5626_instprm) == NULL)
++    {
++        pj_ssize_t new_len;
++        pj_str_t new_prm;
++
++        new_len = acc->cfg.contact_params.slen + acc->rfc5626_instprm.slen;
++        new_prm.ptr = (char*)pj_pool_alloc(acc->pool, new_len);
++        new_prm.slen = 0;
++        pj_strcpy(&new_prm, &acc->cfg.contact_params);
++        pj_strcat(&new_prm, &acc->rfc5626_instprm);
++        acc->cfg.contact_params = new_prm;
++    }
++
+ 
+     /* Create the contact header */
+     contact->ptr = (char*)pj_pool_alloc(pool, PJSIP_MAX_URL_SIZE);

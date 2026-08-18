@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleDisplayName</key><string>JioJoin for Mac</string>
+    <key>CFBundleExecutable</key><string>JioJoinMac</string>
+    <key>CFBundleIdentifier</key><string>com.codetorso.JioJoinMac</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>JioJoin for Mac</string>
+    <key>CFBundleIconFile</key><string>JioJoinMac.icns</string>
+    <key>CFBundlePackageType</key><string>APPL</string>
+    <key>CFBundleShortVersionString</key><string>0.7.0</string>
+    <key>CFBundleVersion</key><string>12</string>
+    <key>LSMinimumSystemVersion</key><string>13.0</string>
+    <key>LSUIElement</key><true/>
+    <key>NSHighResolutionCapable</key><true/>
+    <key>NSMicrophoneUsageDescription</key><string>JioJoin for Mac needs the microphone for calls you explicitly answer or place.</string>
+    <key>NSLocalNetworkUsageDescription</key><string>JioJoin for Mac connects to your JioFiber router for authorized voice service.</string>
+    <key>NSUserNotificationAlertStyle</key><string>alert</string>
+    <key>LSApplicationCategoryType</key><string>public.app-category.social-networking</string>
+</dict>
+</plist>
