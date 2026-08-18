@@ -14,10 +14,14 @@ Copy-Item (Join-Path $Root 'LICENSE.md') $Stage
 $OriginalPath = $env:PATH
 try {
     $env:PATH = "$Stage;$env:SystemRoot\System32;$env:SystemRoot"
-    $SelfTestLine = & (Join-Path $Stage 'jiojoin-engine.exe') --self-test 2>$null |
+    $ErrorActionPreference = 'Continue'
+    $SelfTestOutput = & (Join-Path $Stage 'jiojoin-engine.exe') --self-test 2>$null
+    $SelfTestExitCode = $LASTEXITCODE
+    $ErrorActionPreference = 'Stop'
+    $SelfTestLine = $SelfTestOutput |
         Where-Object { $_ -like '{"event":"self-test"*' } |
         Select-Object -Last 1
-    if ($LASTEXITCODE -ne 0 -or -not $SelfTestLine) { throw 'Packaged Windows engine self-test failed.' }
+    if ($SelfTestExitCode -ne 0 -or -not $SelfTestLine) { throw 'Packaged Windows engine self-test failed.' }
     $SelfTest = $SelfTestLine | ConvertFrom-Json
     if (-not $SelfTest.tls -or -not $SelfTest.amr -or -not $SelfTest.amr_wb) {
         throw 'Packaged Windows engine is missing TLS or AMR support.'
