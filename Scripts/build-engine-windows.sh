@@ -37,7 +37,8 @@ make dep
 make -j"${NUMBER_OF_PROCESSORS:-2}" lib
 # MSYS2 is the build host, so PJSIP otherwise leaves HOST_EXE empty even though
 # the configured MinGW target emits Windows executables.
-make -C pjsip-apps/build -f Samples.mak HOST_EXE=.exe jiojoin_engine.exe
+make -C pjsip-apps/build -f Samples.mak HOST_EXE=.exe \
+  BINDIR=../bin/samples/x86_64-w64-mingw32 jiojoin_engine.exe
 engine=$(find pjsip-apps/bin/samples -type f -iname 'jiojoin_engine*.exe' | head -1)
 [[ -n "$engine" ]] || { echo "Windows engine was not produced." >&2; exit 6; }
 mkdir -p "$task_output"
