@@ -4,6 +4,9 @@
 #include <stdio.h>
 
 #if defined(_WIN32)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
 #include <windows.h>
 static INIT_ONCE jiojoin_stdout_once = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION jiojoin_stdout_lock_value;
