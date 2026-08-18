@@ -20,10 +20,10 @@ if [[ ! -d "$task_pj/.git" ]]; then
 fi
 [[ $(git -C "$task_pj" rev-parse HEAD) == "$task_expected" ]] || { echo "Unexpected PJSIP revision." >&2; exit 4; }
 git -C "$task_pj" apply --reverse --check --ignore-space-change --ignore-whitespace "$task_patch" || { echo "Reviewed Jio patch is missing or changed." >&2; exit 5; }
-if git -C "$task_pj" apply --check "$task_mingw_patch"; then
-  git -C "$task_pj" apply "$task_mingw_patch"
+if git -C "$task_pj" apply --check --ignore-space-change --ignore-whitespace "$task_mingw_patch"; then
+  git -C "$task_pj" apply --ignore-space-change --ignore-whitespace "$task_mingw_patch"
 fi
-git -C "$task_pj" apply --reverse --check "$task_mingw_patch" || { echo "MinGW executable-suffix patch is missing or changed." >&2; exit 5; }
+git -C "$task_pj" apply --reverse --check --ignore-space-change --ignore-whitespace "$task_mingw_patch" || { echo "MinGW executable-suffix patch is missing or changed." >&2; exit 5; }
 
 cp "$task_root/engine/jiojoin_engine.c" "$task_pj/pjsip-apps/src/samples/jiojoin_engine.c"
 cp "$task_root/engine/jiojoin_platform.h" "$task_pj/pjsip-apps/src/samples/jiojoin_platform.h"
