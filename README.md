@@ -60,6 +60,11 @@ no physical audio device, and no Linux Jio registration or call was attempted, s
 a runtime/toolchain validation rather than a Linux interoperability claim. The checked-in
 Ubuntu workflow produces the intended x86-64 release build.
 
+Linux now includes a dependency-minimal local controller at `linux/jiojoin_controller.py`.
+It performs the router OTP flow, keeps provisioned credentials in memory, negotiates
+engine protocol 1 before registration, and provides calling controls over private stdio.
+See `docs/LINUX_HEADLESS.md` for authorization and test commands.
+
 Version 0.7.0 routes only the local provisioning exchange through macOS's system cURL because URLSession rejects some Jio router self-signed certificates before its trust delegate runs. The connection remains HTTPS, is pinned by name to the private default gateway, and sends query data through standard input so OTPs never appear in a process listing.
 
 The 0.7 reliability supervisor adds native heartbeat/status reconciliation, bounded registration retries with jitter, network-path recovery, call operation timeouts, and a locally exported diagnostic report that redacts credentials and telephone identities. Manual disconnect remains authoritative, and registration is never restarted during an active call.

@@ -4,18 +4,24 @@ on:
   push:
     paths:
       - "engine/**"
+      - "linux/**"
+      - "Tests/LinuxControllerTests/**"
       - "patches/**"
       - "Scripts/build-engine-linux.sh"
       - "Scripts/package-engine-linux.sh"
       - "Scripts/test-engine-protocol.sh"
+      - "Scripts/test-linux-controller.sh"
       - ".github/workflows/headless-engine.yml"
   pull_request:
     paths:
       - "engine/**"
+      - "linux/**"
+      - "Tests/LinuxControllerTests/**"
       - "patches/**"
       - "Scripts/build-engine-linux.sh"
       - "Scripts/package-engine-linux.sh"
       - "Scripts/test-engine-protocol.sh"
+      - "Scripts/test-linux-controller.sh"
       - ".github/workflows/headless-engine.yml"
   workflow_dispatch:
 
@@ -32,7 +38,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y \
-            build-essential git pkg-config libssl-dev libasound2-dev \
+            build-essential git pkg-config python3 curl libssl-dev libasound2-dev \
             libopencore-amrnb-dev libopencore-amrwb-dev libvo-amrwbenc-dev
       - name: Build and test protocol
         run: ./Scripts/build-engine-linux.sh

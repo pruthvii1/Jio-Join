@@ -30,9 +30,42 @@ Create the GitHub-release archive:
 ./Scripts/package-engine-linux.sh
 ```
 
-The resulting executable is a headless engine, not a shell that stores credentials.
-Use a private parent process to feed its stdin. Do not paste a `START` command into an
-interactive terminal because base64-encoded SIP passwords remain reusable secrets.
+The archive contains `jiojoin-engine` and `jiojoin-controller`. The controller uses only
+Python 3's standard library and the system `curl` executable. It owns local router OTP
+authorization and feeds credentials to the engine through an anonymous stdin pipe. It
+does not save SIP credentials, cookies, or OTPs to disk.
+
+Do not paste a `START` command into an interactive terminal because base64-encoded SIP
+passwords remain reusable secrets.
+
+## Authorize and run
+
+First verify the engine can open the selected physical devices:
+
+```sh
+./build/headless/linux-$(uname -m)/jiojoin-engine --audio-device-test
+```
+
+Then explicitly request the router OTP and authorize this Linux device:
+
+```sh
+./linux/jiojoin_controller.py authorize \
+  --engine ./build/headless/linux-$(uname -m)/jiojoin-engine
+```
+
+OTP entry is hidden. The controller saves only a generated non-secret device alias under
+`$XDG_CONFIG_HOME/jiojoin/device.json` (or `~/.config/jiojoin/device.json`) with mode
+`0600`. Provisioned SIP credentials remain in memory and are sent only through the
+private engine pipe. On later starts, refresh the already authorized device with:
+
+```sh
+./linux/jiojoin_controller.py run \
+  --engine ./build/headless/linux-$(uname -m)/jiojoin-engine
+```
+
+Interactive calling commands are `status`, `dial NUMBER`, `answer`, `reject`, `hangup`,
+`hold`, `resume`, and `quit`. PJSIP diagnostics are discarded by default because they can
+contain private call metadata.
 
 ## Audio selection
 
@@ -55,8 +88,9 @@ AMR-NB and AMR-WB. The headless VM correctly reported zero physical audio device
 used PJSIP's null-audio path for the self-test. The release archive is dynamically linked
 to the standard Ubuntu OpenSSL, ALSA, and AMR packages listed above.
 
-This validates the Linux compiler, runtime, protocol, codec, and packaging paths. It does
-not prove Jio interoperability on Linux. A real registration, audio-device test, and
-consenting call must still be performed from a Linux desktop on the subscriber's own
-JioFiber LAN before that claim is made. The checked-in Ubuntu x86-64 CI job remains the
-reproducible gate for the primary release architecture.
+Linux Mint 22 on x86-64 has also passed the protocol, TLS, AMR-NB/AMR-WB, packaging, and
+physical capture/playback device tests. This validates the Linux compiler, runtime,
+protocol, codec, audio-open, controller, and packaging paths. It does not yet prove Jio
+interoperability on Linux. A real registration and consenting two-way call must still
+pass on the subscriber's own JioFiber LAN before that claim is made. The checked-in
+Ubuntu x86-64 CI job remains the reproducible release gate.

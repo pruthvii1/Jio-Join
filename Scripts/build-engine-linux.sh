@@ -60,4 +60,5 @@ task_engine=$(find "$task_pj/pjsip-apps/bin/samples" -type f -name jiojoin_engin
 mkdir -p "$task_output"
 cp "$task_engine" "$task_output/jiojoin-engine"
 "$task_root/Scripts/test-engine-protocol.sh" "$task_output/jiojoin-engine"
+"$task_root/Scripts/test-linux-controller.sh"
 echo "$task_output/jiojoin-engine"
