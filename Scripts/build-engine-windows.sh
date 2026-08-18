@@ -31,7 +31,7 @@ cd "$task_pj"
   --with-opencore-amrwbenc=/mingw64 --with-ssl=/mingw64
 make dep
 make -j"${NUMBER_OF_PROCESSORS:-2}" lib
-make -C pjsip-apps/build samples
+make -C pjsip-apps/build -f Samples.mak jiojoin_engine
 engine=$(find pjsip-apps/bin/samples -type f -iname 'jiojoin_engine*.exe' | head -1)
 [[ -n "$engine" ]] || { echo "Windows engine was not produced." >&2; exit 6; }
 mkdir -p "$task_output"

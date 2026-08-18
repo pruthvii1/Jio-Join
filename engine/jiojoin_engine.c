@@ -596,6 +596,7 @@ static void handle_line(char *line)
 int main(int argc, char **argv)
 {
     char line[MAX_LINE];
+    jiojoin_platform_initialize();
     if (argc == 2 && !strcmp(argv[1], "--version")) { emit_hello(); return 0; }
     if (argc == 2 && !strcmp(argv[1], "--self-test")) return run_self_test();
     if (argc == 2 && !strcmp(argv[1], "--audio-device-test")) return run_audio_device_test();

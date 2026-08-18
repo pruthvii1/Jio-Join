@@ -19,6 +19,20 @@ jobs:
             mingw-w64-x86_64-opencore-amr
       - shell: msys2 {0}
         run: ./Scripts/build-engine-windows.sh
+      - name: Validate Windows controller syntax
+        shell: powershell
+        run: |
+          $tokens = $null
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path 'windows/JioJoinDesktop.ps1'),
+            [ref]$tokens,
+            [ref]$errors
+          )
+          if ($errors.Count -ne 0) {
+            $errors | Format-List | Out-String | Write-Error
+            exit 1
+          }
       - shell: powershell
         run: ./Scripts/package-windows.ps1
       - uses: actions/upload-artifact@v4
