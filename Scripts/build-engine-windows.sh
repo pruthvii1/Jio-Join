@@ -12,7 +12,8 @@ task_patch="$task_root/patches/pjproject-2.17-jio.patch"
 for command in git make gcc g++ pkg-config; do command -v "$command" >/dev/null || { echo "Missing: $command" >&2; exit 3; }; done
 
 if [[ ! -d "$task_pj/.git" ]]; then
-  git clone --branch 2.17 --depth 1 https://github.com/pjsip/pjproject.git "$task_pj"
+  git -c core.autocrlf=false clone --branch 2.17 --depth 1 https://github.com/pjsip/pjproject.git "$task_pj"
+  git -C "$task_pj" config core.autocrlf false
   git -C "$task_pj" checkout --detach "$task_expected"
   git -C "$task_pj" apply "$task_patch"
 fi
