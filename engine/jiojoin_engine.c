@@ -418,6 +418,27 @@ static int run_audio_device_test(void)
     return status == PJ_SUCCESS ? 0 : 1;
 }
 
+static int list_audio_devices(void)
+{
+    pj_status_t status = initialize_stack(1);
+    pjmedia_aud_dev_info devices[64];
+    unsigned count = PJ_ARRAY_SIZE(devices), i;
+    if (status != PJ_SUCCESS) { emit_error("initialize", status); return 1; }
+    status = pjsua_enum_aud_devs(devices, &count);
+    if (status != PJ_SUCCESS) { emit_error("audio-device-enumeration", status); pjsua_destroy(); return 1; }
+    for (i = 0; i < count; ++i) {
+        jiojoin_stdout_lock();
+        fputs("{\"event\":\"audio-device-option\",\"message\":\"", stdout);
+        emit_escaped(devices[i].name);
+        fprintf(stdout, "\",\"code\":%d,\"capture\":%s,\"playback\":%s}\n",
+                devices[i].id, devices[i].input_count ? "true" : "false",
+                devices[i].output_count ? "true" : "false");
+        jiojoin_stdout_unlock();
+    }
+    pjsua_destroy();
+    return 0;
+}
+
 static pj_status_t start_account(char **fields, int count)
 {
     char public_id[MAX_FIELD], auth_user[MAX_FIELD], password[MAX_FIELD];
@@ -575,11 +596,13 @@ static void handle_line(char *line)
 int main(int argc, char **argv)
 {
     char line[MAX_LINE];
+    jiojoin_platform_initialize();
     if (argc == 2 && !strcmp(argv[1], "--version")) { emit_hello(); return 0; }
     if (argc == 2 && !strcmp(argv[1], "--self-test")) return run_self_test();
     if (argc == 2 && !strcmp(argv[1], "--audio-device-test")) return run_audio_device_test();
+    if (argc == 2 && !strcmp(argv[1], "--list-audio")) return list_audio_devices();
     if (argc != 1 && !(argc == 2 && !strcmp(argv[1], "--stdio"))) {
-        fputs("Usage: jiojoin-engine [--stdio|--version|--self-test|--audio-device-test]\n", stderr);
+        fputs("Usage: jiojoin-engine [--stdio|--version|--self-test|--audio-device-test|--list-audio]\n", stderr);
         return 64;
     }
     emit_hello();

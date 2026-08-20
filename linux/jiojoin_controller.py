@@ -24,6 +24,7 @@ import socket
 import struct
 import subprocess
 import sys
+import sys
 import threading
 import time
 from dataclasses import dataclass
@@ -350,7 +351,7 @@ class RouterSession:
             raise AuthorizationRequired("This Linux device needs router OTP authorization.")
         return parse_credentials(body, self.alias)
 
-    def authorize(self) -> SIPCredentials:
+    def request_otp(self) -> SIPCredentials | None:
         body, status = self.request(self.account_items())
         if status != 200:
             raise ControllerError(f"The router rejected the OTP request (HTTP {status}).")
@@ -359,8 +360,10 @@ class RouterSession:
                 return parse_credentials(body, self.alias)
             except ControllerError:
                 pass
-        print("OTP requested. Check the SMS sent to the JioFiber account holder.")
-        otp = getpass.getpass("OTP (input hidden): ").strip()
+        return None
+
+    def verify_otp(self, otp: str) -> SIPCredentials:
+        otp = otp.strip()
         if not otp.isdigit() or not 4 <= len(otp) <= 10:
             raise ControllerError("The OTP must contain 4-10 digits.")
         verify_body, verify_status = self.request([("OTP", otp)])
@@ -372,6 +375,13 @@ class RouterSession:
             if refresh_status != 200:
                 raise ControllerError(f"The router rejected configuration retrieval (HTTP {refresh_status}).")
         return parse_credentials(verify_body, self.alias)
+
+    def authorize(self) -> SIPCredentials:
+        credentials = self.request_otp()
+        if credentials is not None:
+            return credentials
+        print("OTP requested. Check the SMS sent to the JioFiber account holder.")
+        return self.verify_otp(getpass.getpass("OTP (input hidden): "))
 
 
 def encode_field(value: str) -> str:
@@ -386,7 +396,8 @@ def start_command(credentials: SIPCredentials, address: str) -> str:
 
 
 class EngineClient:
-    def __init__(self, executable: Path):
+    def __init__(self, executable: Path, event_handler=None,
+                 capture_device: str | None = None, playback_device: str | None = None):
         if not executable.is_file() or not os.access(executable, os.X_OK):
             raise ControllerError(f"The engine is missing or not executable: {executable}")
         self.executable = executable
@@ -397,11 +408,19 @@ class EngineClient:
         self.registration_code: int | None = None
         self.running = False
         self.write_lock = threading.Lock()
+        self.event_handler = event_handler
+        self.capture_device = capture_device
+        self.playback_device = playback_device
 
     def launch(self) -> None:
+        environment = os.environ.copy()
+        if self.capture_device and self.playback_device:
+            environment["JIOJOIN_CAPTURE_DEVICE"] = self.capture_device
+            environment["JIOJOIN_PLAYBACK_DEVICE"] = self.playback_device
         self.process = subprocess.Popen(
             [str(self.executable), "--stdio"], stdin=subprocess.PIPE, stdout=subprocess.PIPE,
             stderr=subprocess.DEVNULL, text=True, encoding="utf-8", bufsize=1,
+            env=environment,
         )
         self.running = True
         threading.Thread(target=self._read_events, name="jiojoin-events", daemon=True).start()
@@ -443,6 +462,8 @@ class EngineClient:
                     self.registration_code = code
                 self.condition.notify_all()
             self._display(event)
+            if self.event_handler is not None:
+                self.event_handler(event)
         self.running = False
         with self.condition:
             self.condition.notify_all()
@@ -542,6 +563,8 @@ def interactive(client: EngineClient) -> None:
 
 
 def default_engine() -> Path:
+    if getattr(sys, "frozen", False):
+        return Path(sys.executable).resolve().with_name("jiojoin-engine")
     root = Path(__file__).resolve().parent.parent
     architecture = os.uname().machine
     built = root / "build" / "headless" / f"linux-{architecture}" / "jiojoin-engine"

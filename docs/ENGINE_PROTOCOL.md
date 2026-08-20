@@ -22,7 +22,8 @@ require protocol `1` before sending credentials.
 ```
 
 `HELLO` can be sent again at any time and `--version` prints the same JSON object without
-starting the command loop.
+starting the command loop. `--list-audio` emits one `audio-device-option` JSON event per
+native device, including `capture` and `playback` booleans, without registering.
 
 ## Commands
 
@@ -59,7 +60,7 @@ Failures provide `operation` when a specific native operation failed. Stable eve
 - `hello`, `engine`, `pong`, `status`
 - `registered`, `registration`
 - `incoming`, `dialing`, `call-state`
-- `media`, `audio-device`, `held`, `resumed`, `remote-held`
+- `media`, `audio-device`, `audio-device-option`, `held`, `resumed`, `remote-held`
 - `error`, `self-test`
 
 Unknown JSON fields must be ignored for forward compatibility. Controllers must use

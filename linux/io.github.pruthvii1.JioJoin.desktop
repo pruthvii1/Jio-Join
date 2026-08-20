@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=JioJoin Desktop
+Comment=Calling-only JioFiberVoice desktop client
+Exec=/opt/jiojoin/jiojoin-desktop
+Icon=call-start
+Terminal=false
+Categories=Network;Telephony;
+StartupNotify=true
+StartupWMClass=JioJoin Desktop

@@ -66,6 +66,11 @@ class LinuxControllerTests(unittest.TestCase):
         self.assertEqual(cookie, "session=temporary")
         self.assertEqual(body, SAMPLE_XML)
 
+    def test_verify_otp_rejects_invalid_input_before_network(self):
+        session = object.__new__(controller.RouterSession)
+        with self.assertRaises(controller.ControllerError):
+            session.verify_otp("12-nope")
+
     def test_otp_and_cookie_are_sent_via_stdin_not_argv(self):
         response = (b"HTTP/1.1 200 OK\r\n\r\n"
                     + SAMPLE_XML + b"\nX-JioJoin-Status: 200\n")

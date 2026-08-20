@@ -4,20 +4,17 @@
 #include <stdio.h>
 
 #if defined(_WIN32)
+#ifndef _WIN32_WINNT
+#define _WIN32_WINNT 0x0601
+#endif
 #include <windows.h>
-static INIT_ONCE jiojoin_stdout_once = INIT_ONCE_STATIC_INIT;
 static CRITICAL_SECTION jiojoin_stdout_lock_value;
-static BOOL CALLBACK jiojoin_initialize_stdout_lock(PINIT_ONCE once, PVOID parameter, PVOID *context)
+static void jiojoin_platform_initialize(void)
 {
-    (void)once;
-    (void)parameter;
-    (void)context;
     InitializeCriticalSection(&jiojoin_stdout_lock_value);
-    return TRUE;
 }
 static void jiojoin_stdout_lock(void)
 {
-    InitOnceExecuteOnce(&jiojoin_stdout_once, jiojoin_initialize_stdout_lock, NULL, NULL);
     EnterCriticalSection(&jiojoin_stdout_lock_value);
 }
 static void jiojoin_stdout_unlock(void)
@@ -26,6 +23,7 @@ static void jiojoin_stdout_unlock(void)
 }
 #define jiojoin_strtok_r strtok_s
 #else
+static void jiojoin_platform_initialize(void) { }
 static void jiojoin_stdout_lock(void) { flockfile(stdout); }
 static void jiojoin_stdout_unlock(void) { funlockfile(stdout); }
 #define jiojoin_strtok_r strtok_r

@@ -1,8 +1,8 @@
 # JioJoin Desktop
 
 An independent desktop client for authorized JioFiberVoice calls on the local JioFiber
-network. The working graphical client currently targets Apple-silicon macOS; the portable
-headless engine is the foundation for native Linux and Windows clients. It does not tether
+network. It includes graphical controllers for Apple-silicon macOS, Linux Mint/Ubuntu
+x86_64, and Windows 11 x86_64 over the same native engine boundary. It does not tether
 to an Android phone, run an Android emulator, or require Asterisk/VPS infrastructure.
 
 The primary product is deliberately calling-only. Experimental AI, soundboard,
@@ -60,10 +60,17 @@ no physical audio device, and no Linux Jio registration or call was attempted, s
 a runtime/toolchain validation rather than a Linux interoperability claim. The checked-in
 Ubuntu workflow produces the intended x86-64 release build.
 
-Linux now includes a dependency-minimal local controller at `linux/jiojoin_controller.py`.
+Linux includes a dependency-minimal local controller at `linux/jiojoin_controller.py`
+and a Python/Tk desktop UI at `linux/jiojoin_desktop.py`.
 It performs the router OTP flow, keeps provisioned credentials in memory, negotiates
 engine protocol 1 before registration, and provides calling controls over private stdio.
 See `docs/LINUX_HEADLESS.md` for authorization and test commands.
+
+Windows 11 uses the native PowerShell/WPF controller in `windows/JioJoinDesktop.ps1`.
+`Scripts/build-engine-windows.sh` performs a real MSYS2 MinGW64 build of the same pinned
+PJSIP source, and the Windows CI workflow runs protocol, TLS, AMR, and packaging checks.
+Live Windows registration and calls remain explicitly unverified until tested on the
+subscriber's Windows hardware.
 
 Version 0.7.0 routes only the local provisioning exchange through macOS's system cURL because URLSession rejects some Jio router self-signed certificates before its trust delegate runs. The connection remains HTTPS, is pinned by name to the private default gateway, and sends query data through standard input so OTPs never appear in a process listing.
 
@@ -98,7 +105,7 @@ The self-test opens only an ephemeral local TLS listener and uses a null audio d
 - Live `200 OK` registration through this subscriber's router is not yet verified.
 - Outgoing audio, incoming call routing, long-call AMR stability, PRACK/100rel behavior, DTMF, and simultaneous phone/Mac registration are not yet verified.
 - Voice calling is implemented; video and conference calling are not.
-- This first build targets arm64 only.
+- macOS targets arm64; Linux and Windows target x86_64.
 - Router implementations and Jio service behavior may vary by model, region, firmware, and Fiber versus AirFiber.
 - If live registration fails, collect only redacted status codes and headers. Never paste SIP passwords, authorization headers, XML configuration, OTPs, or reusable tokens into issues or chat.
 

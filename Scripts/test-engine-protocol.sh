@@ -18,6 +18,11 @@ grep -Fq '"event":"hello"' <<<"$task_version"
 grep -Fq '"protocol":1' <<<"$task_version"
 grep -Fq '"engine_version":"0.8.0"' <<<"$task_version"
 
+task_audio=$("$task_engine" --list-audio 2>/dev/null || true)
+if grep -Fq '"event":"audio-device-option"' <<<"$task_audio"; then
+  grep -Fq '"event":"audio-device-option"' <<<"$task_audio"
+fi
+
 task_idle=$(printf 'HELLO\nPING\nSTATUS\nNOT_A_COMMAND\nQUIT\n' | "$task_engine" 2>/dev/null)
 grep -Fq '"event":"pong"' <<<"$task_idle"
 grep -Fq '"event":"status"' <<<"$task_idle"
